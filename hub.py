@@ -1,5 +1,3 @@
-#Test
-
 from pox.core import core
 import pox.openflow.libopenflow_01 as of
 
