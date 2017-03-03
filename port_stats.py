@@ -64,14 +64,14 @@ class Switch(object):
         Timer(10, self.send_stats_request, recurring = True)
         
     def handle_port_stats(self, event):
-		# Log the packets in and packets out for each port
-		for stat in event.stats:
-		    log.info("Switch: %s, port: %s, packets in: %s, packets_out: %s", self.connection, stat.port_no, stat.rx_packets, stat.tx_packets)
+        # Log the packets in and packets out for each port
+        for stat in event.stats:
+            log.info("Switch: %s, port: %s, packets in: %s, packets_out: %s", self.connection, stat.port_no, stat.rx_packets, stat.tx_packets)
     
     def send_stats_request (self):
-		# Send a port stats request to the switch
-		msg = of.ofp_stats_request(body=of.ofp_port_stats_request())
-		self.connection.send(msg)
+        # Send a port stats request to the switch
+        msg = of.ofp_stats_request(body=of.ofp_port_stats_request())
+        self.connection.send(msg)
     
     def _handle_PacketIn (self, event):
         '''
