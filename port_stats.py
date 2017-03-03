@@ -42,15 +42,15 @@ class Switch(object):
     # The connection to device object
     connection = None
     
-    # The MAC table linking MAC addresses with ports
-    mac_table = {}
-    
     def __init__(self, connection):
         '''
         Create the Switch instance
         '''
         # Store the connection object in the instance
         self.connection = connection
+        
+        # The MAC table linking MAC addresses with ports
+        self.mac_table = {}
         
         # Register to the connection to listen events from the device
         # and pass them to the instance (self)
