@@ -82,7 +82,6 @@ class Switch(object):
             msg = of.ofp_packet_out()
             msg.actions.append(of.ofp_action_output(port = of.OFPP_FLOOD))
             msg.data = event.ofp
-            msg.in_port = event.port
             self.connection.send(msg)
         else:       
             if dst in self.mac_table:
@@ -116,5 +115,4 @@ class Switch(object):
                 msg = of.ofp_packet_out()
                 msg.actions.append(of.ofp_action_output(port = of.OFPP_FLOOD))
                 msg.data = event.ofp
-                msg.in_port = event.port
                 self.connection.send(msg)
