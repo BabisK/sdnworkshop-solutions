@@ -26,6 +26,9 @@ import pox.lib.util as poxutil                # Various util functions
 import pox.lib.revent as revent               # Event library
 import pox.lib.recoco as recoco               # Multitasking library
 
+import pox.forwarding.learning
+pox.forwarding.l3_learning.FLOW_IDLE_TIMEOUT = 1000  # monkeypatching for learning purposes
+
 
 # Create a logger for this component
 log = core.getLogger()
