@@ -70,7 +70,8 @@ class Switch(object):
     
     def send_stats_request (self):
 		# Send a port stats request to the switch
-		self.connection.send(of.ofp_stats_request(body=of.ofp_port_stats_request()))
+		msg = of.ofp_stats_request(body=of.ofp_port_stats_request())
+		self.connection.send(msg)
     
     def _handle_PacketIn (self, event):
         '''
@@ -99,7 +100,6 @@ class Switch(object):
             msg = of.ofp_packet_out()
             msg.actions.append(of.ofp_action_output(port = of.OFPP_FLOOD))
             msg.data = event.ofp
-            msg.in_port = event.port
             self.connection.send(msg)
         else:       
             if dst in self.mac_table:
@@ -133,5 +133,4 @@ class Switch(object):
                 msg = of.ofp_packet_out()
                 msg.actions.append(of.ofp_action_output(port = of.OFPP_FLOOD))
                 msg.data = event.ofp
-                msg.in_port = event.port
                 self.connection.send(msg)
