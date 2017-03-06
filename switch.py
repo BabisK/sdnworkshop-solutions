@@ -1,4 +1,6 @@
 from pox.core import core
+import pox.lib.packet as pkt
+from pox.lib.addresses import IPAddr
 import pox.openflow.libopenflow_01 as of
 
 log = core.getLogger()
@@ -6,13 +8,22 @@ log = core.getLogger()
 IDLE_TIMOUT = 5
 HARD_TIMEOUT = 15
 
-def launch ():
-  """
-  Launch is the entry point of the module, much like __main__
-  """
+def launch (blacklist=None, whitelist=None):
+    """
+    Launch is the entry point of the module, much like __main__
+    """
+    global BLACKLIST, WHITELIST
+    if blacklist:
+        BLACKLIST = blacklist.split(",")
+    else:
+        BLACKLIST = []
+    if whitelist:
+        WHITELIST = whitelist.split(",")
+    else:
+        WHITELIST = []
 
-  # Register the switch_component to the system
-  core.registerNew(SwitchComponent)
+    # Register the switch_component to the system
+    core.registerNew(SwitchComponent)
 
 class SwitchComponent(object):
     '''
@@ -64,6 +75,10 @@ class Switch(object):
         
         # Extract the data packet from the packet in event
         data = event.parsed
+
+        firewall_rule_updated = self.handle_firewall(event)
+        if firewall_rule_updated:
+            return
         
         # Update the MAC table. The MAC address that is the source of
         # the frame is served from the port where this packet originated
@@ -116,3 +131,37 @@ class Switch(object):
                 msg.actions.append(of.ofp_action_output(port = of.OFPP_FLOOD))
                 msg.data = event.ofp
                 self.connection.send(msg)
+
+    def handle_firewall(self, event):
+        log.debug("Got a packet in event from switch %s", event.dpid)
+        log.debug("Event packet type: %s", type(event.parsed))
+        # The packet sent to the controller is an ethernet packet (L2)
+        # This encapsulates the higher layer packet which we can get by calling next on
+        # the L2 one.
+        decapsulated_packet = event.parsed.next
+        # There are many kinds of things this decapsulated packet could be eg
+        # - any kind of L3 packet (IP, ICMP, RIP etc)
+        # - a resolution packet  (ARP, NDP)
+        # We need to handle only the ones we care about,
+        # isinstance can used to do that.
+        # The packet types defined for pox and documentation on them is
+        # available in ~/pox/pox/lib/packet/
+        # every filename is a packet class that can be used here
+        # You can see in each packet's __init__ which fields it defines.
+        if isinstance(decapsulated_packet, pkt.ipv4):
+            log.debug("decapsulated packet dest ip: %s", decapsulated_packet.dstip)
+            log.debug("decapsulated packet src ip: %s", decapsulated_packet.srcip)
+            if decapsulated_packet.dstip in BLACKLIST and \
+               decapsulated_packet.srcip not in WHITELIST:
+                log.info("Blocking event for packet %s", decapsulated_packet.dstip)
+
+                msg = of.ofp_flow_mod()
+                msg.priority = of.OFPP_MAX
+                msg.match.dl_type = 0x800
+                msg.match.nw_dst = str(decapsulated_packet.dstip)
+                msg.match.nw_src = str(decapsulated_packet.srcip)
+                # no actions = drop
+
+                log.debug("Sending openflow message %s", msg)
+                event.connection.send(msg)
+                return True
